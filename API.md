@@ -1,4 +1,5 @@
 # DreamyWare 2026 - Lua API Documentation
+
 This document describes the available Lua functions for creating scripts in DreamyWare.
 
 ## Table of Contents
@@ -10,6 +11,7 @@ This document describes the available Lua functions for creating scripts in Drea
 - [DreamyUI API](#dreamyui-api)
 - [Memory API](#memory-api)
 - [Entities API](#entities-api)
+- [Examples](#examples)
 
 ---
 
@@ -20,14 +22,7 @@ Functions that you should define in your script to be called by the engine.
 | :--- | :--- |
 | `OnCreateMove()` | Called every game tick. Use for Anti-Aim and movement logic. |
 | `OnDraw()` | Called every frame. Use for UI and custom ESP. |
-| `OnEvent(name)` | Called when a game event occurs (e.g., "OnLocalPlayerDeath"). |
-
-**Example:**
-```lua
-function OnDraw()
-    -- Your UI code here
-end
-```
+| `OnEvent(name)` | Called when a game event occurs. <br> Supported: `OnLocalPlayerDeath`, `OnPlayerKill`. |
 
 ---
 
@@ -111,7 +106,7 @@ Access to cheat's internal entity structures.
 
 | Function | Description | Example |
 | :--- | :--- | :--- |
-| `GetLocal()` | Returns a table with local player info (base, name, team, pos). | `local lp = entities.GetLocal()` |
+| `GetLocal()` | Returns a table with local player info. | `local lp = entities.GetLocal()` |
 | `GetEnemies()` | Returns a list of all visible enemies. | `local enemies = entities.GetEnemies()` |
 | `GetTeammates()` | Returns a list of all teammates. | `local team = entities.GetTeammates()` |
 
@@ -120,6 +115,39 @@ Access to cheat's internal entity structures.
 - `.name` (String)
 - `.team` (Number)
 - `.pos` (Table: `{x, y, z}`)
+- `.velocity` (Table: `{x, y, z, length2d}`)
+
+
+---
+
+## Examples
+
+### Kill/Death Say
+Automatically sends messages to chat upon specific events.
+```lua
+function OnEvent(name)
+    if name == "OnPlayerKill" then
+        engine.ExecuteCMD("say ez ez")
+    end
+    
+    if name == "OnLocalPlayerDeath" then
+       engine.ExecuteCMD("say bruh")
+    end
+end
+```
+
+### Simple Speedometer
+Displays your current horizontal movement speed in a custom window.
+```lua
+function OnDraw()
+    local lp = entities.GetLocal()
+    if lp and dreamyUI.CreateWindow("Stats") then
+        local speed = math.floor(lp.velocity.length2d)
+        dreamyUI.Text("Current Speed: " .. speed .. " u/s")
+        dreamyUI.EndWindow()
+    end
+end
+```
 
 ---
 *(Copyright) 2026 DreamyWare*
