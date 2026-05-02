@@ -241,5 +241,37 @@ function OnDraw()
 end
 ```
 
+### Custom Head Aimbot
+Automatically calculates angles and aims at the closest enemy's head (Bone 7).
+```lua
+local function CalcAngle(srcX, srcY, srcZ, dstX, dstY, dstZ)
+    local deltaX = dstX - srcX
+    local deltaY = dstY - srcY
+    local deltaZ = dstZ - srcZ
+
+    local hyp = math.sqrt(deltaX * deltaX + deltaY * deltaY)
+    
+    local pitch = -(math.atan(deltaZ, hyp) * 180.0 / math.pi)
+    local yaw = (math.atan(deltaY, deltaX) * 180.0 / math.pi)
+    
+    return pitch, yaw
+end
+
+function OnCreateMove(cmd)
+    local lp = entities.GetLocal()
+    local enemy = entities.getClosestEnemy()
+    
+    if lp and enemy then
+        local myX, myY, myZ = entities.getBonePos(lp.base, 7)
+        local eX, eY, eZ = entities.getHeadPos(enemy.base)
+        
+        if myX and myY and myZ and eX and eY and eZ then
+            local pitch, yaw = CalcAngle(myX, myY, myZ, eX, eY, eZ)
+            usercmd.SetViewAngles(pitch, yaw)
+        end
+    end
+end
+```
+
 ---
 *(Copyright) 2026 DreamyWare*
