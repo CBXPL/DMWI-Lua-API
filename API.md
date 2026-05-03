@@ -139,22 +139,24 @@ Access to cheat's internal entity structures.
 | `GetLocal()` | Returns a table with local player info. | `local lp = entities.GetLocal()` |
 | `GetEnemies()` | Returns a list of all visible enemies. | `local enemies = entities.GetEnemies()` |
 | `GetTeammates()` | Returns a list of all teammates. | `local team = entities.GetTeammates()` |
-| `getClosestEnemy()` | Returns the single closest enemy entity based on 3D distance. | `local target = entities.getClosestEnemy()` |
-| `getClosestTeammate()` | Returns the single closest teammate entity. | `local friend = entities.getClosestTeammate()` |
-| `getClosestToCrosshairEnemy()` | Returns the closest enemy to the center of the screen (crosshair). | `local target = entities.getClosestToCrosshairEnemy()` |
-| `getClosestToCrosshairTeammate()` | Returns the closest teammate to the center of the screen. | `local friend = entities.getClosestToCrosshairTeammate()` |
-| `getHeadPos(base)` | Returns the head position of the given entity base (Bone ID 7). | `local hx, hy, hz = entities.getHeadPos(enemy.base)` |
-| `getBonePos(base, id)` | Returns the position of a specific bone ID for the given entity base. | `local bx, by, bz = entities.getBonePos(enemy.base, 8)` |
+| `getClosestEnemy()` | Returns the single closest enemy based on 3D distance. | `local target = entities.getClosestEnemy()` |
+| `getClosestTeammate()` | Returns the single closest teammate. | `local friend = entities.getClosestTeammate()` |
+| `getClosestToCrosshairEnemy()` | Returns the enemy closest to screen center (FOV-based, best for aimbot). | `local target = entities.getClosestToCrosshairEnemy()` |
+| `getClosestToCrosshairTeammate()` | Returns the teammate closest to screen center. | `local friend = entities.getClosestToCrosshairTeammate()` |
+| `getUnderCrosshairEnemy()` | Returns the **enemy** the engine crosshair is directly on (ray-cast). Returns `nil` if aiming at teammate or empty space. | `local t = entities.getUnderCrosshairEnemy()` |
+| `getUnderCrosshairTeammate()` | Returns the **teammate** the engine crosshair is directly on (ray-cast). Returns `nil` if aiming at enemy or empty space. | `local t = entities.getUnderCrosshairTeammate()` |
+| `getHeadPos(base)` | Returns head position XYZ (Bone ID 7). | `local hx, hy, hz = entities.getHeadPos(enemy.base)` |
+| `getBonePos(base, id)` | Returns position of a specific bone ID. | `local bx, by, bz = entities.getBonePos(enemy.base, 8)` |
 
 **Entity Table Structure:**
 - `.base` (Number/Pointer)
 - `.team` (Number)
 - `.index` (Number)
 - `.name` (String)
-- `.isUnderCrosshair` (Boolean) - True if entity is under your crosshair.
+- `.isUnderCrosshair` (Boolean) — Engine ray-cast hit. True only when the CS2 engine places the crosshair directly on the model. Works in all functions.
+- `.isClosestToCrosshair` (Boolean) — True only when returned by `getClosestToCrosshairEnemy/Teammate`. FOV-based, does not require direct ray-cast hit.
 - `.pos` (Table: `{x, y, z}`)
 - `.velocity` (Table: `{x, y, z, length2d}`)
-
 ---
 
 ## Overlay API (`overlay`)
@@ -269,6 +271,17 @@ function OnCreateMove(cmd)
             local pitch, yaw = CalcAngle(myX, myY, myZ, eX, eY, eZ)
             usercmd.SetViewAngles(pitch, yaw)
         end
+    end
+end
+```
+
+### Custom Triggerbot
+Automatically shoots when the engine crosshair is directly on an enemy.
+```lua
+function OnCreateMove()
+    local target = entities.getUnderCrosshairEnemy()
+    if target then
+        usercmd.sendInput(IN_ATTACK)
     end
 end
 ```
