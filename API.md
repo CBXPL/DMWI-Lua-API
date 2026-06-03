@@ -1,6 +1,4 @@
 # DreamyWare 2026 - Lua API Documentation
-## This is an unfinished preview version of lua api 1.0, More will be avaible with full 1.0 release.
-This document describes the available Lua functions for creating scripts in DreamyWare.
 
 ## Table of Contents
 - [Hooks](#hooks)
@@ -11,6 +9,7 @@ This document describes the available Lua functions for creating scripts in Drea
 - [Windows 64-bit API](#windows-64-bit-api)
 - [Anti-Aim API](#anti-aim-api)
 - [DreamyUI API](#dreamyui-api)
+- [Chams API](#chams-api)
 - [Memory API](#memory-api)
 - [Vec2 / Vec3 Userdata](#vec2--vec3-userdata)
 - [Entities API](#entities-api)
@@ -65,6 +64,12 @@ Vec2/Vec3-based drawing widgets for screen and world space.
 | `CreateFilledSquareVec3(vec3, [size], [r], [g], [b], [a])` | Draws a filled square centered at a Vec3 world position (auto W2S). | `adv_overlay.CreateFilledSquareVec3(world, 8, 0, 255, 255)` |
 | `CreateImageVec2(image, tl, tr, br, bl, [r], [g], [b], [a])` | Draws a textured quad from 4 Vec2 screen corners. | `adv_overlay.CreateImageVec2(img, v2(0,0), v2(100,0), v2(100,100), v2(0,100))` |
 | `CreateImageVec3(image, tl, tr, br, bl, [r], [g], [b], [a])` | Draws a textured quad from 4 Vec3 world corners (auto W2S). | `adv_overlay.CreateImageVec3(img, v3a, v3b, v3c, v3d)` |
+| `CreateQuadVec2(a, b, c, d, [r], [g], [b], [a])` | Draws a filled convex quad from 4 Vec2 screen points. | `adv_overlay.CreateQuadVec2(p1, p2, p3, p4, 255, 0, 0)` |
+| `CreateQuadVec3(a, b, c, d, [r], [g], [b], [a])` | Draws a filled convex quad from 4 Vec3 world points (auto W2S). | `adv_overlay.CreateQuadVec3(w1, w2, w3, w4, 0, 255, 0)` |
+| `CreateVerticeVec2(a, b, c, [r], [g], [b], [a])` | Draws a filled triangle from 3 Vec2 screen points. | `adv_overlay.CreateVerticeVec2(p1, p2, p3, 0, 0, 255)` |
+| `CreateVerticeVec3(a, b, c, [r], [g], [b], [a])` | Draws a filled triangle from 3 Vec3 world points (auto W2S). | `adv_overlay.CreateVerticeVec3(w1, w2, w3, 255, 255, 0)` |
+| `CreateTriangleVec2(a, b, c, [r], [g], [b], [a], [thickness])` | Draws a hollow triangle outline from 3 Vec2 screen points. | `adv_overlay.CreateTriangleVec2(p1, p2, p3, 255, 0, 0, 255, 2)` |
+| `CreateTriangleVec3(a, b, c, [r], [g], [b], [a], [thickness])` | Draws a hollow triangle outline from 3 Vec3 world points (auto W2S). | `adv_overlay.CreateTriangleVec3(w1, w2, w3, 0, 255, 0, 255, 3)` |
 | `CreateTextVec3(vec3, text, [r], [g], [b], [a])` | Draws text at a Vec3 world position (auto W2S). | `adv_overlay.CreateTextVec3(worldPos, "Hello", 255, 255, 0)` |
 
 ## Image Loading
@@ -148,6 +153,17 @@ Custom menu and floating window creation.
 | `ListBox(label, items, selected_var)` | Scrollable list box. Same args as ComboBox. | `dreamyUI.ListBox("Map", maps, "sel_map")` |
 | `SameLine()` | Places next widget on the same line. | `dreamyUI.SameLine()` |
 | `SetNextItemWidth(w)` | Sets width for the next widget. | `dreamyUI.SetNextItemWidth(100)` |
+| `SetCursorPos(x, y)` | Sets the cursor position for the next widget (relative to window). | `dreamyUI.SetCursorPos(50, 100)` |
+
+### DreamyUI Flags (`dreamyUI.flags`)
+Global UI appearance settings applied to every subsequent window.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `WindowSize(w, h)` | Sets default size for new windows (0,0 = auto). | `dreamyUI.flags.WindowSize(400, 300)` |
+| `RoundedCorners(bool)` | Enables/disables rounded corners (default true). | `dreamyUI.flags.RoundedCorners(false)` |
+| `NoResize(bool)` | Enables/disables the resize grip corner (default false). | `dreamyUI.flags.NoResize(true)` |
+| `InputTextSize(w)` | Sets a custom width in pixels for subsequent InputText widgets (default 80). | `dreamyUI.flags.InputTextSize(150)` |
 
 ### DreamyUIColors Enums:
 `Background`, `TitleBar`, `Text`, `Button`, `ButtonHovered`, `ButtonActive`, `Checkbox`, `Slider`
@@ -206,6 +222,7 @@ Full 2D/3D vector types with operator overloading and methods.
 | `v:dot(other)` | `number` | Dot product |
 | `v:unpack()` | `x, y` | Returns components as separate numbers |
 | `v:clone()` | `Vec2` | Returns a copy |
+| `v:toVec3([z])` | `Vec3` | Converts to Vec3 (optional z, default 0) |
 
 **Operators:** `+`, `-`, `*` (scalar), `/` (scalar), `tostring`, field access `.x`, `.y`
 
@@ -225,6 +242,7 @@ Full 2D/3D vector types with operator overloading and methods.
 | `v:worldToScreen()` | `Vec2` or `nil` | Projects to screen, returns Vec2 or nil if off-screen |
 | `v:unpack()` | `x, y, z` | Returns components as separate numbers |
 | `v:clone()` | `Vec3` | Returns a copy |
+| `v:toVec2()` | `Vec2` | Converts to Vec2 (drops Z) |
 
 **Operators:** `+`, `-`, `*` (scalar), `/` (scalar), `tostring`, field access `.x`, `.y`, `.z`
 
@@ -267,6 +285,8 @@ Access to cheat's internal entity structures.
 
 **Entity Table Structure:**
 - `.base` (Number/Pointer)
+- `.health` (Number) — HP 0-100
+- `.money` (Number) — Current money (from m_iAccount)
 - `.team` (Number)
 - `.index` (Number)
 - `.name` (String)
@@ -302,6 +322,46 @@ Background visibility checking for enemies. Runs every ~30ms using the same bone
 **`overlay.colors` Enum:**
 - `Font`
 - `Graph`
+
+---
+
+## Chams API (`chams`)
+Custom material creation for player chams (works with the built-in Chams menu).
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `CreateMaterial(name)` | Starts defining a new chams material. Name must be unique per script. | `chams.CreateMaterial("myFlat")` |
+| `kv3(code)` | Sets the KV3 body (content between `{}`). Call after `CreateMaterial`. | `chams.kv3([[shader = "solidcolor.vfx" ...]])` |
+| `EndMaterial()` | Finalizes and registers the material. Returns the material index (100+) or 0 on failure. | `local idx = chams.EndMaterial()` |
+
+### How it works
+1. `CreateMaterial("name")` begins definition.
+2. `kv3(body)` sets the raw KV3 body (everything between `{` and `}`).
+3. `EndMaterial()` auto-wraps the KV3 header, creates both visible (`name.vmat`) and invisible (`name_i.vmat`, through-walls) materials, and adds them to the Chams menu at position `100+`.
+4. The invisible variant auto-receives `F_DISABLE_Z_BUFFERING = 1` / `F_DISABLE_Z_WRITE = 1` / `F_IGNOREZ = 1` flags unless already present.
+5. If the name ends with `_i` (e.g. `CreateMaterial("myMat_i")`), only the invisible variant is created (no visible version).
+6. Materials are cleaned up when the script is unloaded.
+
+### Example – Flat Chams (1:1 with built-in Flat)
+```lua
+if chams.CreateMaterial("myFlat") then
+    chams.kv3([[
+        shader = "solidcolor.vfx"
+        F_PAINT_VERTEX_COLORS = 1
+        F_TRANSLUCENT = 0
+        F_BLEND_MODE = 1
+        g_vColorTint = [1, 1, 1, 1]
+        TextureAmbientOcclusion = resource:"materials/default/default_mask_tga_fde710a5.vtex"
+        g_tAmbientOcclusion = resource:"materials/default/default_mask_tga_fde710a5.vtex"
+        g_tColor = resource:"materials/default/default_mask_tga_fde710a5.vtex"
+        g_tNormal = resource:"materials/default/default_mask_tga_fde710a5.vtex"
+        g_tTintMask = resource:"materials/default/default_mask_tga_fde710a5.vtex"
+    ]])
+    chams.EndMaterial()
+end
+```
+The material `"myFlat"` appears in every Chams material combo in the menu.  
+The invisible variant (`myFlat_i`) is generated automatically with through-wall flags.
 
 ---
 
@@ -480,6 +540,26 @@ function OnDraw()
 end
 ```
 
+### 3D Box on Every Enemy
+Draws a 30x30x60 box at each enemy's position.
+```lua
+function OnDraw()
+    local half, halfH = 15, 30
+    for _, ent in ipairs(entities.GetEnemies()) do
+        local cx, cy, cz = ent.pos.x, ent.pos.y, ent.pos.z
+        local corners = {
+            Vec3(cx-half, cy-half, cz-halfH), Vec3(cx+half, cy-half, cz-halfH),
+            Vec3(cx+half, cy+half, cz-halfH), Vec3(cx-half, cy+half, cz-halfH),
+            Vec3(cx-half, cy-half, cz+halfH), Vec3(cx+half, cy-half, cz+halfH),
+            Vec3(cx+half, cy+half, cz+halfH), Vec3(cx-half, cy+half, cz+halfH),
+        }
+        local edges = {{0,1},{1,2},{2,3},{3,0},{4,5},{5,6},{6,7},{7,4},{0,4},{1,5},{2,6},{3,7}}
+        for _, e in ipairs(edges) do
+            adv_overlay.CreateLineVec3(corners[e[1]+1], corners[e[2]+1], 255, 50, 50, 255, 2)
+        end
+    end
+end
+```
 
 ### 3D Box with Color Picker (72u high)
 Customizable 3D box on enemies — color via dreamyUI.
