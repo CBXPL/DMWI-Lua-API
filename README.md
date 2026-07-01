@@ -1,2 +1,2 @@
 # DMWI-Lua-API
-## Current API ver: 1.0 | DMWI 1.0.0.0
+## Current API ver: 1.5 | DMWI 2.0.0.0
