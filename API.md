@@ -8,6 +8,7 @@
 - [Globals API](#globals-api)
 - [Windows 64-bit API](#windows-64-bit-api)
 - [Anti-Aim API](#anti-aim-api)
+- [SetModel API](#setmodel-api-setmodel)
 - [DreamyUI API](#dreamyui-api)
 - [Chams API](#chams-api)
 - [Memory API](#memory-api)
@@ -130,6 +131,21 @@ Control over player rotations.
 | `get_original_pitch()` | Gets the original mouse Pitch angle. | `local p = antiaim.get_original_pitch()` |
 | `get_menu_yaw()` | Gets the Yaw angle calculated by the cheat menu. | `local y = antiaim.get_menu_yaw()` |
 | `get_menu_pitch()` | Gets the Pitch angle calculated by the cheat menu. | `local p = antiaim.get_menu_pitch()` |
+
+---
+
+## SetModel API (`SetModel`)
+Set agent or weapon models via Lua.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `agent(path)` | Sets the local player's agent model to the given path. | `SetModel.agent("agents/models/tm_professional/tm_professional_vari.vmdl")` |
+
+### Example – Number K Agent
+```lua
+-- Number K agent (T-side)
+SetModel.agent("agents/models/tm_professional/tm_professional_vari.vmdl")
+```
 
 ---
 
@@ -282,6 +298,13 @@ Access to cheat's internal entity structures.
 | `getUnderCrosshairTeammate()` | Returns the **teammate** the engine crosshair is directly on (ray-cast). Returns `nil` if aiming at enemy or empty space. | `local t = entities.getUnderCrosshairTeammate()` |
 | `getHeadPos(base)` | Returns head position XYZ (Bone ID 7). | `local hx, hy, hz = entities.getHeadPos(enemy.base)` |
 | `getBonePos(base, id)` | Returns position of a specific bone ID. | `local bx, by, bz = entities.getBonePos(enemy.base, 8)` |
+| `ComputeRandomSeed(pitch, yaw, roll, tick)` | Calculates engine's random seed for given angles and tick. | `local seed = entities.ComputeRandomSeed(89, 180, 0, lp.TickBase + 1)` |
+| `GetCurrentSpread(base, seed, inaccuracy, spread)` | Calculates spread using the engine function, returns table with `{x, y}`. | `local spread = entities.GetCurrentSpread(localPlayer.base, seed, inaccuracy, basespread)` |
+| `GetBaseSpread(base)` | Returns base weapon spread from weapon data. | `local spread = entities.GetBaseSpread(localPlayer.base)` |
+| `GetInaccuracy(base)` | Returns current inaccuracy from weapon. | `local inaccuracy = entities.GetInaccuracy(localPlayer.base)` |
+| `GetBaseSpreadSeed(base)` | Returns base weapon spread seed from weapon data. | `local seed = entities.GetBaseSpreadSeed(localPlayer.base)` |
+| `GetBaseRecoilSeed(base)` | Returns base weapon recoil seed from weapon data. | `local seed = entities.GetBaseRecoilSeed(localPlayer.base)` |
+| `GetBaseRecoilMagnitude(base)` | Returns base weapon recoil magnitude from weapon data. | `local mag = entities.GetBaseRecoilMagnitude(localPlayer.base)` |
 
 **Entity Table Structure:**
 - `.base` (Number/Pointer)
@@ -290,6 +313,10 @@ Access to cheat's internal entity structures.
 - `.team` (Number)
 - `.index` (Number)
 - `.name` (String)
+- `.isScoped` (Boolean) — True if entity is scoped
+- `.currentClip` (Number) — Current ammo in clip
+- `.maxClip` (Number) — Maximum ammo capacity of clip
+- `.TickBase` (Number) — The entity's m_nTickBase
 - `.isUnderCrosshair` (Boolean) — Engine ray-cast hit. True only when the CS2 engine places the crosshair directly on the model. Works in all functions.
 - `.isClosestToCrosshair` (Boolean) — True only when returned by `getClosestToCrosshairEnemy/Teammate`. FOV-based, does not require direct ray-cast hit.
 - `.pos` (Table: `{x, y, z}`)
