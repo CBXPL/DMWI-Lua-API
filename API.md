@@ -26,6 +26,7 @@ Functions that you should define in your script to be called by the engine.
 | `OnCreateMove(cmd)` | Called every game tick. Use for Anti-Aim and movement logic. |
 | `OnDraw()` | Called every frame. Use for UI and custom ESP. |
 | `OnEvent(name)` | Called when a game event occurs. <br> Supported: `OnLocalPlayerDeath`, `OnPlayerKill`, `OnPlayerHit`. |
+| `OnFrameStage(stage)` | Called every frame stage. Use `FRAME_RENDER_START`, `FRAME_RENDER_END`, `FRAME_NET_UPDATE_START`, `FRAME_NET_UPDATE_END` constants to filter. |
 
 ---
 
@@ -36,6 +37,7 @@ Interaction with the game engine.
 | :--- | :--- | :--- |
 | `ExecuteCMD(command)` | Executes a console command. | `engine.ExecuteCMD("say Hello")` |
 | `IsInGame()` | Returns true if connected to a server. | `if engine.IsInGame() then ... end` |
+| `WorldToScreen(x, y, z)` | Projects 3D world coordinates to 2D screen. Returns `sx, sy` or `nil` if off-screen. | `local sx, sy = engine.WorldToScreen(pos.x, pos.y, pos.z)` |
 
 ---
 
@@ -201,6 +203,17 @@ Global UI appearance settings applied to every subsequent window.
 | `antiaim.left` | `bool` | Is AA Left direction active (keybind held/toggled) |
 | `antiaim.right` | `bool` | Is AA Right direction active (keybind held/toggled) |
 | `rage.enabled` | `bool` | Is Ragebot enabled |
+| `rage.doubletap` | `bool` | Is doubletap active |
+| `misc.bhop` | `bool` | Is bhop enabled |
+| `misc.subtickstrafe` | `bool` | Is autostrafe enabled |
+
+### Entity Flags (`FL_` constants)
+Use with `entities.GetFlags()` and `bit.band()`.
+
+| Flag | Value | Description |
+| :--- | :--- | :--- |
+| `FL_ONGROUND` | `1` | Entity is on the ground |
+| `FL_DUCKING` | `2` | Entity is ducking |
 
 ---
 
@@ -305,6 +318,7 @@ Access to cheat's internal entity structures.
 | `GetBaseSpreadSeed(base)` | Returns base weapon spread seed from weapon data. | `local seed = entities.GetBaseSpreadSeed(localPlayer.base)` |
 | `GetBaseRecoilSeed(base)` | Returns base weapon recoil seed from weapon data. | `local seed = entities.GetBaseRecoilSeed(localPlayer.base)` |
 | `GetBaseRecoilMagnitude(base)` | Returns base weapon recoil magnitude from weapon data. | `local mag = entities.GetBaseRecoilMagnitude(localPlayer.base)` |
+| `GetFlags(base)` | Returns entity flags (FL_ONGROUND, FL_DUCKING, etc.). | `local flags = entities.GetFlags(lp.base)` |
 
 **Entity Table Structure:**
 - `.base` (Number/Pointer)
@@ -321,6 +335,50 @@ Access to cheat's internal entity structures.
 - `.isClosestToCrosshair` (Boolean) — True only when returned by `getClosestToCrosshairEnemy/Teammate`. FOV-based, does not require direct ray-cast hit.
 - `.pos` (Table: `{x, y, z}`)
 - `.velocity` (Table: `{x, y, z, length2d}`)
+
+---
+
+## Weapon VData API (`weapon`)
+Read-only access to weapon data (CCSWeaponBaseVData) from the currently held weapon.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `GetDamage(base)` | Returns weapon damage per shot. | `local dmg = weapon.GetDamage(lp.base)` |
+| `GetMaxSpeed(base)` | Returns max movement speed with this weapon (units/sec). | `local spd = weapon.GetMaxSpeed(lp.base)` |
+| `IsFullAuto(base)` | Returns true if weapon is fully automatic. | `if weapon.IsFullAuto(lp.base) then ... end` |
+
+---
+
+## Spread Manipulation API (`spreadmanipulation`)
+Calculate spread offsets for accuracy prediction.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `CalculateSpread(base, seed, inaccuracy, spread)` | Calculates spread X/Y for given parameters. | `local sx, sy = spreadmanipulation.CalculateSpread(base, seed, inacc, spr)` |
+| `GetSeed(base)` | Returns current weapon random seed. | `local seed = spreadmanipulation.GetSeed(lp.base)` |
+| `GetInaccuracy(base)` | Returns current weapon inaccuracy. | `local inacc = spreadmanipulation.GetInaccuracy(lp.base)` |
+| `GetSpread(base)` | Returns current weapon spread. | `local spr = spreadmanipulation.GetSpread(lp.base)` |
+| `GetRecoilIndex(base)` | Returns current recoil index. | `local ri = spreadmanipulation.GetRecoilIndex(lp.base)` |
+
+---
+
+## ConVar API (`convar`)
+Read console variables by name.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `Get(name)` | Returns the CConvar pointer (or nil). | `local cv = convar.Get("sv_cheats")` |
+| `GetFloat(name)` | Returns the float value of a convar. | `local fov = convar.GetFloat("fov_cs_debug")` |
+| `GetInt(name)` | Returns the integer value of a convar. | `local v = convar.GetInt("sv_cheats")` |
+
+---
+
+## Sound API (`vsnd`)
+Play game sound files (.vsnd).
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `PlaySound(path)` | Plays a .vsnd sound file. | `vsnd.PlaySound("sounds/ui/ready_up.vsnd")` |
 ---
 
 ## Overlay API (`overlay`)
@@ -409,7 +467,8 @@ Manipulate the current user command (CUserCmd).
 | :--- | :--- | :--- |
 | `sendInput(IN_FLAG)` | Injects a button press into the user command. <br>**Supported flags:** `IN_ATTACK`, `IN_ATTACK2`, `IN_JUMP` | `usercmd.sendInput(IN_JUMP)` |
 | `GetViewAngles()` | Gets current view angles from memory (returns x, y, z). | `local x, y, z = usercmd.GetViewAngles()` |
-| `SetViewAngles(x, y)` | Sets engine view angles (x = pitch, y = yaw). | `usercmd.SetViewAngles(89, 180)` |
+| `SetViewAngles(x, y, [roll])` | Sets engine view angles (x = pitch, y = yaw, optional roll). | `usercmd.SetViewAngles(89, 180, 0)` |
+| `SetMovement(forward, left)` | Sets movement values. Clamped to -1.0 to 1.0. | `usercmd.SetMovement(1.0, 0.0)` |
 
 ---
 
