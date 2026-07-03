@@ -12,6 +12,7 @@
 - [DreamyUI API](#dreamyui-api)
 - [Chams API](#chams-api)
 - [Memory API](#memory-api)
+- [Offset Access API](#offset-access-api)
 - [Vec2 / Vec3 Userdata](#vec2--vec3-userdata)
 - [Entities API](#entities-api)
 - [Examples](#examples)
@@ -226,6 +227,48 @@ Direct access to game memory (Handle with care!).
 | `ReadInt(address)` | Reads a 4-byte integer from memory. | `local hp = memory.ReadInt(addr + 0x34C)` |
 | `ReadFloat(address)` | Reads a float from memory. | `local f = memory.ReadFloat(addr + 0x10)` |
 | `ReadPtr(address)` | Reads a 64-bit pointer address. | `local ptr = memory.ReadPtr(base + 0x123)` |
+
+---
+
+## Offset Access API (`offset`)
+Returns raw offset values from `Offsets.hpp` so you don't have to remember hex. Combine with `memory` API.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `Get(name)` | Returns the offset value (ptrdiff_t) for the given name, or `nil` if unknown. | `local hpOff = offset.Get("Health")` |
+
+### Usage with memory API
+```lua
+local lp = entities.GetLocal()
+if lp then
+    -- Read defuser status via item services
+    local itemSvc = memory.ReadPtr(lp.base + offset.Get("m_pItemServices"))
+    local hasDefuser = memory.ReadBool(itemSvc + offset.Get("CCSPlayer_ItemServices.m_bHasDefuser"))
+
+    -- Read weapon price
+    local weaponBase = memory.ReadPtr(memory.ReadPtr(lp.base + 0x60) + 0x10)
+    local price = memory.ReadInt(weaponBase + offset.Get("CCSWeaponBaseVData.m_nPrice"))
+end
+```
+
+### Supported Offset Names
+
+| Name | Offset | Type | Read | Write | Description |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `CCSWeaponBaseVData.m_nKillAward` | 0x710 | int32 | Yes | Yes | Kill reward money |
+| `CCSWeaponBaseVData.m_nPrice` | 0x70C | int32 | Yes | Yes | Weapon buy price |
+| `CCSWeaponBaseVData.m_bIsRevolver` | 0x71E | bool | Yes | Yes | Is revolver weapon |
+| `m_pItemServices` | 0x11E8 | ptr | Yes | No | CPlayer_ItemServices pointer |
+| `CCSPlayer_ItemServices.m_bHasDefuser` | 0x48 | bool | Yes | Yes | Has defuser kit |
+| `CCSPlayer_ItemServices.m_bHasHelmet` | 0x49 | bool | Yes | Yes | Has helmet |
+| `m_pAimPunchServices` | 0x1490 | ptr | Yes | No | CCSPlayer_AimPunchServices pointer |
+| `C_SmokeGrenadeProjectile.m_nVoxelUpdate` | 0x1294 | int32 | Yes | Yes | Voxel update counter |
+| `C_SmokeGrenadeProjectile.m_vSmokeColor` | 0x125C | Vector(12B) | Yes | Yes | Smoke color RGB |
+| `C_SmokeGrenadeProjectile.m_bDidSmokeEffect` | 0x1254 | bool | Yes | Yes | Did smoke effect fire |
+| `CEntityInstance.m_pEntity` | 0x10 | ptr | Yes | No | CEntityIdentity pointer |
+| `CEntityIdentity.m_nameStringableIndex` | 0x14 | int32 | Yes | Yes | String table index |
+| `CEntityIdentity.m_name` | 0x18 | ptr | Yes | No | Entity name symbol |
+| `CEntityIdentity.m_designerName` | 0x20 | ptr | Yes | No | Designer class name symbol |
 
 ---
 
@@ -467,7 +510,7 @@ Manipulate the current user command (CUserCmd).
 | :--- | :--- | :--- |
 | `sendInput(IN_FLAG)` | Injects a button press into the user command. <br>**Supported flags:** `IN_ATTACK`, `IN_ATTACK2`, `IN_JUMP` | `usercmd.sendInput(IN_JUMP)` |
 | `GetViewAngles()` | Gets current view angles from memory (returns x, y, z). | `local x, y, z = usercmd.GetViewAngles()` |
-| `SetViewAngles(x, y, [roll])` | Sets engine view angles (x = pitch, y = yaw, optional roll). | `usercmd.SetViewAngles(89, 180, 0)` |
+| `SetViewAngles(x, y, [roll], [silent])` | Sets engine view angles (x = pitch, y = yaw, optional roll). Pass `"silent"` as 4th arg for silent aim (no visual crosshair movement, writes to input history only). | `usercmd.SetViewAngles(89, 180, 0, "silent")` |
 | `SetMovement(forward, left)` | Sets movement values. Clamped to -1.0 to 1.0. | `usercmd.SetMovement(1.0, 0.0)` |
 
 ---
