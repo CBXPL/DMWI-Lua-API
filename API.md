@@ -515,6 +515,17 @@ Manipulate the current user command (CUserCmd).
 
 ---
 
+## SECRET FEATURES
+
+Hidden Lua API functions that let you control cheat features directly from scripts.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `femboymode.toggle.menu(bool)` | Toggles the FemboyMode image in the menu. | `femboymode.toggle.menu(true)` |
+| `femboymode.toggle.esp(bool)` | Toggles the FemboyMode image on ESP boxes. | `femboymode.toggle.esp(true)` |
+
+---
+
 ## Examples
 
 ### Kill/Death Say
