@@ -4,8 +4,10 @@
 - [Hooks](#hooks)
 - [Engine API](#engine-api)
 - [ESP API](#esp-api)
+- [Image Loading](#image-loading)
 - [User Input API](#user-input-api)
 - [Globals API](#globals-api)
+- [Global Functions](#global-functions)
 - [Windows 64-bit API](#windows-64-bit-api)
 - [Anti-Aim API](#anti-aim-api)
 - [SetModel API](#setmodel-api-setmodel)
@@ -13,8 +15,17 @@
 - [Chams API](#chams-api)
 - [Memory API](#memory-api)
 - [Offset Access API](#offset-access-api)
+- [Standard Library (`std`)](#standard-library-std)
+- [Hook API (`Hook`)](#hook-api-hook)
 - [Vec2 / Vec3 Userdata](#vec2--vec3-userdata)
 - [Entities API](#entities-api)
+- [Weapon VData API (`weapon`)](#weapon-vdata-api-weapon)
+- [Spread Manipulation API (`spreadmanipulation`)](#spread-manipulation-api-spreadmanipulation)
+- [ConVar API (`convar`)](#convar-api-convar)
+- [Sound API (`vsnd`)](#sound-api-vsnd)
+- [Overlay API (`overlay`)](#overlay-api-overlay)
+- [Visibility API (`visibility`)](#visibility-api-visibility)
+- [UserCmd API (`usercmd`)](#usercmd-api-usercmd)
 - [Examples](#examples)
 
 ---
@@ -142,7 +153,7 @@ Set agent or weapon models via Lua.
 
 | Function | Description | Example |
 | :--- | :--- | :--- |
-| `agent(path)` | Sets the local player's agent model to the given path. | `SetModel.agent("agents/models/tm_professional/tm_professional_vari.vmdl")` |
+| `agent(path)` | Sets the local player's agent model to the given path. Uses ResourceSystem PreCache + BlockingLoadResourceByName + CModelState fallback. Only works for official game models (custom .vmdl files not in manifest cannot be loaded). | `SetModel.agent("agents/models/tm_professional/tm_professional_vari.vmdl")` |
 
 ### Example – Number K Agent
 ```lua
@@ -194,6 +205,7 @@ Global UI appearance settings applied to every subsequent window.
 | Function | Description | Example |
 | :--- | :--- | :--- |
 | `getValue(key)` | Returns the current state of a cheat setting. Returns `boolean` or `nil` if key doesn't exist. | `local enabled = getValue("antiaim.enabled")` |
+| `setValue(key, value)` | Sets a cheat setting. Pass `"true"` or `"false"` (strings) to toggle booleans. Useful for custom toggle scripts. | `setValue("ragebot.autofire", "true")` |
 | `IsKeyDown(key)` | Returns `true` if a key is held. Keys: `A-Z`, `ALT`, `TAB`, `MOUSE4`, `MOUSE5`. | `if IsKeyDown("W") then ... end` |
 | `IsKeyPressed(key)` | Returns `true` once when key is first pressed (edge detection). Same keys as `IsKeyDown`. | `if IsKeyPressed("F1") then ... end` |
 
@@ -203,8 +215,15 @@ Global UI appearance settings applied to every subsequent window.
 | `antiaim.enabled` | `bool` | Is Anti-Aim enabled |
 | `antiaim.left` | `bool` | Is AA Left direction active (keybind held/toggled) |
 | `antiaim.right` | `bool` | Is AA Right direction active (keybind held/toggled) |
+| `antiaim.spin` | `bool` | Is AA Spin active |
 | `rage.enabled` | `bool` | Is Ragebot enabled |
 | `rage.doubletap` | `bool` | Is doubletap active |
+| `ragebot.doubletap` | `bool` | Is Double Tap enabled |
+| `ragebot.autofire` | `bool` | Is Auto Fire enabled |
+| `ragebot.hideshots` | `bool` | Is Hide Shots enabled |
+| `ragebot.silent` | `bool` | Is Silent Aim enabled |
+| `legitbot.enabled` | `bool` | Is Legitbot enabled |
+| `legitbot.silent` | `bool` | Is Legitbot Silent Aim enabled |
 | `misc.bhop` | `bool` | Is bhop enabled |
 | `misc.subtickstrafe` | `bool` | Is autostrafe enabled |
 
@@ -269,6 +288,53 @@ end
 | `CEntityIdentity.m_nameStringableIndex` | 0x14 | int32 | Yes | Yes | String table index |
 | `CEntityIdentity.m_name` | 0x18 | ptr | Yes | No | Entity name symbol |
 | `CEntityIdentity.m_designerName` | 0x20 | ptr | Yes | No | Designer class name symbol |
+
+---
+
+## Standard Library (`std`)
+Useful math and utility functions.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `clamp(val, min, max)` | Clamps value between min and max. | `std.clamp(15, 0, 10)` → `10` |
+| `min(a, b)` | Returns the smaller of two numbers. | `std.min(3, 7)` → `3` |
+| `max(a, b)` | Returns the larger of two numbers. | `std.max(3, 7)` → `7` |
+| `lerp(a, b, t)` | Linear interpolation (`a + (b-a)*t`). | `std.lerp(0, 100, 0.5)` → `50` |
+| `sign(x)` | Returns `1` for positive, `-1` for negative, `0` for zero. | `std.sign(-5)` → `-1` |
+| `round(x)` | Rounds to nearest integer. | `std.round(3.7)` → `4` |
+| `sqrt(x)` | Square root. | `std.sqrt(25)` → `5` |
+
+---
+
+## Hook API (`Hook`)
+Direct game function hooking and calling from Lua using MinHook.
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `FindPattern(module, pattern)` | Scans a module for a byte pattern. Returns address or `0`. | `Hook.FindPattern("client.dll", "48 8B C4")` |
+| `CreateHook(module, pattern, name)` | Hooks a function by pattern. | `Hook.CreateHook("client.dll", "...", "MyFunc")` |
+| `CreateHookDirect(addr, name)` | Same as `CreateHook` but takes a direct address instead of scanning. | `Hook.CreateHookDirect(addr, "MyFunc")` |
+| `HookVTable(vtablePtr, index, name)` | Hooks a vtable entry by patching the vtable. | `Hook.HookVTable(vtableAddr, 5, "MyVFunc")` |
+| `Call(addr, a1, ..., a10)` | Calls a function at `addr` with up to 10 arguments (all passed as uint64). Returns the uint64 result. | `Hook.Call(fn, thisPtr, arg1, 0xFFFFFFFF, 0)` |
+
+### Hook Handler
+When a hooked function is called, your Lua function receives up to 10 arguments as Lua numbers. If it returns a number, that value is used as the return value. If it returns nothing, the original function is called.
+
+### Example — Remove Scope Overlay
+```lua
+Hook.CreateHook("client.dll", "48 8B C4 53 57 48 83 EC ? 48 8B FA 44 0F 29 40 ? 48 8B 51 ? 48 8B", "DrawScopeOverlay")
+
+function DrawScopeOverlay(a1, a2)
+    return 0 -- null result → scope overlay not drawn
+end
+```
+
+### Example — Call native function by pattern
+```lua
+local fn = Hook.FindPattern("client.dll", "48 89 5C 24 08 57")
+-- call with args (this, pPassEntity, mask, layer, unkNum)
+local result = Hook.Call(fn, thisPtr, entPtr, 0xFFFFFFFFFFFFFFFF, 0, 0)
+```
 
 ---
 
