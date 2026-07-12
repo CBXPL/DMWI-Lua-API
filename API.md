@@ -212,20 +212,9 @@ Global UI appearance settings applied to every subsequent window.
 ### Supported Keys:
 | Key | Type | Description |
 | :--- | :--- | :--- |
-| `antiaim.enabled` | `bool` | Is Anti-Aim enabled |
-| `antiaim.left` | `bool` | Is AA Left direction active (keybind held/toggled) |
-| `antiaim.right` | `bool` | Is AA Right direction active (keybind held/toggled) |
-| `antiaim.spin` | `bool` | Is AA Spin active |
-| `rage.enabled` | `bool` | Is Ragebot enabled |
-| `rage.doubletap` | `bool` | Is doubletap active |
-| `ragebot.doubletap` | `bool` | Is Double Tap enabled |
-| `ragebot.autofire` | `bool` | Is Auto Fire enabled |
-| `ragebot.hideshots` | `bool` | Is Hide Shots enabled |
-| `ragebot.silent` | `bool` | Is Silent Aim enabled |
 | `legitbot.enabled` | `bool` | Is Legitbot enabled |
 | `legitbot.silent` | `bool` | Is Legitbot Silent Aim enabled |
 | `misc.bhop` | `bool` | Is bhop enabled |
-| `misc.subtickstrafe` | `bool` | Is autostrafe enabled |
 
 ### Entity Flags (`FL_` constants)
 Use with `entities.GetFlags()` and `bit.band()`.
