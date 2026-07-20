@@ -39,6 +39,8 @@ Functions that you should define in your script to be called by the engine.
 | `OnDraw()` | Called every frame. Use for UI and custom ESP. |
 | `OnEvent(name)` | Called when a game event occurs. <br> Supported: `OnLocalPlayerDeath`, `OnPlayerKill`, `OnPlayerHit`. |
 | `OnFrameStage(stage)` | Called every frame stage. Use `FRAME_RENDER_START`, `FRAME_RENDER_END`, `FRAME_NET_UPDATE_START`, `FRAME_NET_UPDATE_END` constants to filter. |
+| `OnLevelInit(mapName)` | Called when a new map finishes loading. Use to reset per-map script state. | 
+| `OnLevelShutdown()` | Called when the current map is being unloaded (map change or disconnect). |
 
 ---
 
@@ -212,6 +214,16 @@ Global UI appearance settings applied to every subsequent window.
 ### Supported Keys:
 | Key | Type | Description |
 | :--- | :--- | :--- |
+| `antiaim.enabled` | `bool` | Is Anti-Aim enabled |
+| `antiaim.left` | `bool` | Is AA Left direction active (keybind held/toggled) |
+| `antiaim.right` | `bool` | Is AA Right direction active (keybind held/toggled) |
+| `antiaim.spin` | `bool` | Is AA Spin active |
+| `rage.enabled` | `bool` | Is Ragebot enabled |
+| `rage.doubletap` | `bool` | Is doubletap active |
+| `ragebot.doubletap` | `bool` | Is Double Tap enabled |
+| `ragebot.autofire` | `bool` | Is Auto Fire enabled |
+| `ragebot.hideshots` | `bool` | Is Hide Shots enabled |
+| `ragebot.silent` | `bool` | Is Silent Aim enabled |
 | `legitbot.enabled` | `bool` | Is Legitbot enabled |
 | `legitbot.silent` | `bool` | Is Legitbot Silent Aim enabled |
 | `misc.bhop` | `bool` | Is bhop enabled |
