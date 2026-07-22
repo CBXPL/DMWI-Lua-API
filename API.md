@@ -24,6 +24,7 @@
 - [ConVar API (`convar`)](#convar-api-convar)
 - [Sound API (`vsnd`)](#sound-api-vsnd)
 - [Overlay API (`overlay`)](#overlay-api-overlay)
+- [Indicators API (`indicators`)](#indicators-api-indicators)
 - [Visibility API (`visibility`)](#visibility-api-visibility)
 - [UserCmd API (`usercmd`)](#usercmd-api-usercmd)
 - [Examples](#examples)
@@ -504,6 +505,23 @@ Render custom graphics and text directly on the screen (above the game).
 | `GetDefaultFont()` | Returns the default cheat font. | `local font = overlay.GetDefaultFont()` |
 | `LoadFont(path, size)` | Loads a custom font from disk. | `local myFont = overlay.LoadFont("C:\\Windows\\Fonts\\arial.ttf", 16.0)` |
 
+## Indicators API (`indicators`)
+Adds your own entry to the built-in status indicator stack (the little rounded pills on the left side of the screen, same style as the built-in RAGE/MIN DMG/AntiAim/DoubleTap indicators). Requires "Enable Indicators" to be on in the menu (Misc tab).
+
+| Function | Description | Example |
+| :--- | :--- | :--- |
+| `render(name, [visible])` | Shows (or updates) an indicator with the given name. Call it every frame you want it visible. `visible` defaults to `true` if omitted. | `indicators.render("LEGITBOT")` or `indicators.render("LEGITBOT", getValue("legitbot.enabled"))` |
+
+Notes:
+- There's no separate "hide" call - if you stop calling `render()` for a given name (or call it with `false`), it just fades out on its own after ~150ms. So the usual pattern is calling it every tick from your script's main loop with whatever boolean state you want reflected:
+  ```lua
+  function OnCreateMove()
+      indicators.render("LEGITBOT", getValue("legitbot.enabled") == true)
+  end
+  ```
+- Custom indicators always get appended at the end of the stack, below the built-in ones, in the order their name was first seen - they don't reorder/swap places with each other.
+- The name itself is what gets displayed as the label text.
+
 ## Visibility API (`visibility`)
 Background visibility checking for enemies. Runs every ~30ms using the same bone checks as ESP (HeadPos + Bone 0). Each triangle has early return.
 
@@ -704,6 +722,19 @@ function OnDraw()
         255, 255, 255, 255, nil,
         {0, 0, 0, 0}, {0, 0, 0, 200}, {0, 0, 0, 0}
     )
+end
+```
+
+### Custom Status Indicators
+Adds your own pills to the built-in indicator stack (below RAGE/MIN DMG/AA/DOUBLETAP), reflecting whatever cheat state you care about. No setup/teardown needed - just call `render()` every frame; stop calling it (or pass `false`) and it fades out on its own.
+```lua
+function OnDraw()
+    indicators.render("LEGITBOT", getValue("legitbot.enabled") == true)
+    indicators.render("RAGE SILENT", getValue("ragebot.silent") == true)
+    indicators.render("HIDE SHOTS", getValue("ragebot.hideshots") == true)
+
+    -- Only shows up while actually held down (e.g. a manual override key)
+    indicators.render("OVERRIDE", IsKeyDown("MOUSE5"))
 end
 ```
 
