@@ -52,7 +52,29 @@ Interaction with the game engine.
 | :--- | :--- | :--- |
 | `ExecuteCMD(command)` | Executes a console command. | `engine.ExecuteCMD("say Hello")` |
 | `IsInGame()` | Returns true if connected to a server. | `if engine.IsInGame() then ... end` |
-| `WorldToScreen(x, y, z)` | Projects 3D world coordinates to 2D screen. Returns `sx, sy` or `nil` if off-screen. | `local sx, sy = engine.WorldToScreen(pos.x, pos.y, pos.z)` |
+| `WorldToScreen(x, y, z)` | Projects a 3D world point to 2D screen space. Takes **three separate numbers**, not a table/Vec3. Returns two numbers `sx, sy` on success, or a **single** `nil` on failure. | `local sx, sy = engine.WorldToScreen(pos.x, pos.y, pos.z)` |
+
+### `engine.WorldToScreen` gotchas
+
+This is the single most-misused function in the API, almost always for one of these three reasons:
+
+1. **It takes 3 loose numbers, not a Vec3/table.** `engine.WorldToScreen(pos)` silently fails (the first argument isn't a number, so the function returns `nil` immediately) - it does **not** error, it just always returns `nil`. You must unpack the coordinates yourself: `engine.WorldToScreen(pos.x, pos.y, pos.z)`.
+2. **`nil` means "behind the camera", not "off-screen."** The check inside is purely "is this point in front of you" (`W <= 0.01` → `nil`). A point that's in front of you but far to the side, above, or below the viewport still returns real `sx, sy` numbers - they're just outside `0..screenWidth` / `0..screenHeight`. If you need "is this actually visible on screen", you must additionally range-check the result yourself against `globals.GetScreenSize()`:
+   ```lua
+   local w, h = globals.GetScreenSize()
+   local sx, sy = engine.WorldToScreen(pos.x, pos.y, pos.z)
+   if sx and sy and sx >= 0 and sx <= w and sy >= 0 and sy <= h then
+       -- actually on screen
+   end
+   ```
+3. **Always check for `nil` before using the result.** Since failure returns only `nil` (not `nil, nil`), `local sx, sy = engine.WorldToScreen(...)` sets **both** `sx` and `sy` to `nil` on failure (Lua fills missing return values with `nil`) - but if you skip the `if sx and sy then` guard and pass `sx`/`sy` straight into something like `overlay.Text(sx, sy, ...)`, that throws a "bad argument, number expected, got nil" error instead of failing quietly.
+
+**Don't confuse this with the Vec3 method `v:worldToScreen()`** (see [Vec3 Methods](#vec2--vec3-userdata)) - that one takes no arguments (it projects the Vec3 it's called on), and returns a **single** `Vec2` object or `nil`, not two numbers. Mixing the two up (`local sx, sy = pos:worldToScreen()`) leaves `sx` as a `Vec2` userdata and `sy` as `nil`, which then errors wherever `sx` gets used as a number.
+
+| Function | Takes | Returns on success | Returns on failure |
+| :--- | :--- | :--- | :--- |
+| `engine.WorldToScreen(x, y, z)` | 3 numbers | `sx, sy` (2 numbers) | `nil` (1 value) |
+| `vec3:worldToScreen()` | nothing (method call) | `Vec2` (1 object) | `nil` (1 value) |
 
 ---
 
@@ -209,7 +231,7 @@ Global UI appearance settings applied to every subsequent window.
 | :--- | :--- | :--- |
 | `getValue(key)` | Returns the current state of a cheat setting. Returns `boolean` or `nil` if key doesn't exist. | `local enabled = getValue("antiaim.enabled")` |
 | `setValue(key, value)` | Sets a cheat setting. Pass `"true"` or `"false"` (strings) to toggle booleans. Useful for custom toggle scripts. | `setValue("ragebot.autofire", "true")` |
-| `IsKeyDown(key)` | Returns `true` if a key is held. Keys: `A-Z`, `ALT`, `TAB`, `MOUSE4`, `MOUSE5`. | `if IsKeyDown("W") then ... end` |
+| `IsKeyDown(key)` | Returns `true` if a key is held. Keys: `A-Z`, `ALT`, `TAB`, `SPACE`, `MOUSE4`, `MOUSE5`. | `if IsKeyDown("W") then ... end` |
 | `IsKeyPressed(key)` | Returns `true` once when key is first pressed (edge detection). Same keys as `IsKeyDown`. | `if IsKeyPressed("F1") then ... end` |
 
 ### Supported Keys:
@@ -379,7 +401,7 @@ Full 2D/3D vector types with operator overloading and methods.
 | `v:normalize()` | `Vec3` | Returns a normalized copy |
 | `v:dot(other)` | `number` | Dot product |
 | `v:cross(other)` | `Vec3` | Cross product |
-| `v:worldToScreen()` | `Vec2` or `nil` | Projects to screen, returns Vec2 or nil if off-screen |
+| `v:worldToScreen()` | `Vec2` or `nil` | Projects to screen, returns Vec2 or nil if behind the camera (see the `engine.WorldToScreen` gotchas above - same nil semantics, and easy to confuse with that function's 2-number return) |
 | `v:unpack()` | `x, y, z` | Returns components as separate numbers |
 | `v:clone()` | `Vec3` | Returns a copy |
 | `v:toVec2()` | `Vec2` | Converts to Vec2 (drops Z) |
@@ -430,6 +452,10 @@ Access to cheat's internal entity structures.
 | `GetBaseRecoilSeed(base)` | Returns base weapon recoil seed from weapon data. | `local seed = entities.GetBaseRecoilSeed(localPlayer.base)` |
 | `GetBaseRecoilMagnitude(base)` | Returns base weapon recoil magnitude from weapon data. | `local mag = entities.GetBaseRecoilMagnitude(localPlayer.base)` |
 | `GetFlags(base)` | Returns entity flags (FL_ONGROUND, FL_DUCKING, etc.). | `local flags = entities.GetFlags(lp.base)` |
+| `GetCurrentWeaponID(base)` | Returns the item definition index (weapon ID) of the entity's active weapon, or `nil`. | `local id = entities.GetCurrentWeaponID(lp.base)` |
+| `GetCurrentWeaponName(base)` | Returns the display name of the entity's active weapon (e.g. `"AK-47"`), or `nil`. | `local name = entities.GetCurrentWeaponName(lp.base)` |
+| `GetArmor(base)` | Returns current armor value (0-100), or `nil`. | `local armor = entities.GetArmor(enemy.base)` |
+| `HasHelmet(base)` | Returns `true` if the entity has a helmet equipped. | `if entities.HasHelmet(enemy.base) then ... end` |
 
 **Entity Table Structure:**
 - `.base` (Number/Pointer)
@@ -474,13 +500,16 @@ Calculate spread offsets for accuracy prediction.
 ---
 
 ## ConVar API (`convar`)
-Read console variables by name.
+Read and write console variables by name.
 
 | Function | Description | Example |
 | :--- | :--- | :--- |
 | `Get(name)` | Returns the CConvar pointer (or nil). | `local cv = convar.Get("sv_cheats")` |
 | `GetFloat(name)` | Returns the float value of a convar. | `local fov = convar.GetFloat("fov_cs_debug")` |
 | `GetInt(name)` | Returns the integer value of a convar. | `local v = convar.GetInt("sv_cheats")` |
+| `Set(name, value)` | Writes a value to a convar. `value` can be a number or boolean. Returns `true` on success, `false` if the convar doesn't exist or is a string-type convar (string writes aren't supported - see note below). | `convar.Set("cl_interp", 0.03)` |
+
+Note: `Set` only supports bool/float/int convars. String-type convars (`value.sz` internally) always fail - overwriting that pointer from Lua without going through the engine's own string allocator risks a crash later when the engine reads/frees it, so it's refused rather than attempted.
 
 ---
 
